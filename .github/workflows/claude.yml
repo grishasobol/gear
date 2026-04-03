@@ -11,10 +11,11 @@ on:
     types: [submitted]
 
 jobs:
+  # General-purpose Claude agent: responds to @claude in comments
   claude:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude review')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, '@claude review')) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
@@ -35,12 +36,40 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          additional_permissions: |
+            actions: read
+
+  # Code review: responds to "@claude review" in PR comments
+  claude-review:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude review')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude review'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
           plugins: 'code-review@claude-code-plugins'
           show_full_output: "true"
           additional_permissions: |
             actions: read
           prompt: |
-            Follow the review guidelines from .gemini/styleguide.md in the repository root.
+            /code-review:code-review ${{ github.repository }}/pull/${{ github.event.issue.number || github.event.pull_request.number }}
+
+            Additional review guidelines: follow .gemini/styleguide.md in the repository root.
             Do NOT comment on formatting enforced by rustfmt/forge fmt.
             Do NOT flood with low-signal style comments.
