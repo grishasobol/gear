@@ -20,15 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
@@ -36,15 +36,18 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
-          # This is an optional setting that allows Claude to read CI results on PRs
+          review_comments: "true"
           additional_permissions: |
             actions: read
+          prompt: |
+            When performing code review, follow the review guidelines from .gemini/styleguide.md in the repository root.
+            These guidelines define review priorities, anti-noise rules, and repository-specific cues.
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+            For each issue found, include:
+            - A GitHub permalink to the exact line
+            - Clear description of the issue
+            - Suggested fix if applicable
+            - Severity: [critical], [warning], or [suggestion]
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
-
+            Do NOT comment on formatting enforced by rustfmt/forge fmt.
+            Do NOT flood with low-signal style comments.
