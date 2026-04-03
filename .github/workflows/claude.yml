@@ -35,19 +35,13 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          review_comments: "true"
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          plugins: 'code-review@claude-code-plugins'
           additional_permissions: |
             actions: read
           prompt: |
-            When performing code review, follow the review guidelines from .gemini/styleguide.md in the repository root.
-            These guidelines define review priorities, anti-noise rules, and repository-specific cues.
-
-            For each issue found, include:
-            - A GitHub permalink to the exact line
-            - Clear description of the issue
-            - Suggested fix if applicable
-            - Severity: [critical], [warning], or [suggestion]
+            When performing code review, use the code-review plugin to post inline comments.
+            Follow the review guidelines from .gemini/styleguide.md in the repository root.
 
             Do NOT comment on formatting enforced by rustfmt/forge fmt.
             Do NOT flood with low-signal style comments.
