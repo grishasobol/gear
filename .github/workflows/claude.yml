@@ -35,19 +35,24 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          review_comments: "true"
+          classify_inline_comments: "true"
           additional_permissions: |
             actions: read
           prompt: |
             When performing code review, follow the review guidelines from .gemini/styleguide.md in the repository root.
             These guidelines define review priorities, anti-noise rules, and repository-specific cues.
 
-            For each issue found, include:
-            - A GitHub permalink to the exact line
+            When you find issues in the code, post them as INLINE COMMENTS on the specific lines
+            of the PR diff using the GitHub API, not as a single large comment.
+            Use `gh api` with the pulls/comments or pulls/reviews endpoint to create
+            review comments on specific files and lines of the diff.
+
+            For each issue, include:
+            - Severity: [critical], [warning], or [suggestion]
             - Clear description of the issue
             - Suggested fix if applicable
-            - Severity: [critical], [warning], or [suggestion]
+
+            Post a brief summary as a separate top-level PR comment.
 
             Do NOT comment on formatting enforced by rustfmt/forge fmt.
             Do NOT flood with low-signal style comments.
