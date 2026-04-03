@@ -20,31 +20,55 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
+          prompt: |
+            IMPORTANT: When performing code review, follow these rules:
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
+            ## Review Style Guide
+            Read and follow the review guidelines from .gemini/styleguide.md in the repository root.
+            These guidelines define review priorities, anti-noise rules, and repository-specific cues.
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+            ## Review Output Format
+            When reviewing a PR, produce TWO types of output:
 
+            ### 1. Summary Comment
+            Post ONE top-level PR comment with:
+            - A brief summary of what the PR does
+            - Overall assessment (approve / request changes / neutral)
+            - High-level observations (architecture, design, testing gaps)
+            Do NOT include specific line-level issues here.
+
+            ### 2. Inline Review Comments
+            For each specific issue found, post a SEPARATE inline review comment on the exact file and line.
+            Each inline comment MUST include:
+            - A GitHub permalink to the exact line (https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha || github.sha }}/PATH#LNUMBER)
+            - Clear description of the issue
+            - Suggested fix if applicable
+            - Severity: [critical], [warning], or [suggestion]
+
+            Use `gh` CLI to post inline comments via the GitHub API:
+            - Use `gh api` to create a pull request review with individual comments on specific lines
+            - Each issue = separate review comment at the exact diff position
+            - This allows reviewers to resolve issues individually
+
+            ### What NOT to do
+            - Do NOT put all findings in a single large comment
+            - Do NOT just reference "file.rs:42" — always include a clickable permalink
+            - Do NOT comment on formatting enforced by rustfmt/forge fmt
+            - Do NOT flood with low-signal style comments
