@@ -35,40 +35,18 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          review_comments: "true"
           additional_permissions: |
             actions: read
           prompt: |
-            IMPORTANT: When performing code review, follow these rules:
-
-            ## Review Style Guide
-            Read and follow the review guidelines from .gemini/styleguide.md in the repository root.
+            When performing code review, follow the review guidelines from .gemini/styleguide.md in the repository root.
             These guidelines define review priorities, anti-noise rules, and repository-specific cues.
 
-            ## Review Output Format
-            When reviewing a PR, produce TWO types of output:
-
-            ### 1. Summary Comment
-            Post ONE top-level PR comment with:
-            - A brief summary of what the PR does
-            - Overall assessment (approve / request changes / neutral)
-            - High-level observations (architecture, design, testing gaps)
-            Do NOT include specific line-level issues here.
-
-            ### 2. Inline Review Comments
-            For each specific issue found, post a SEPARATE inline review comment on the exact file and line.
-            Each inline comment MUST include:
-            - A GitHub permalink to the exact line (https://github.com/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha || github.sha }}/PATH#LNUMBER)
+            For each issue found, include:
+            - A GitHub permalink to the exact line
             - Clear description of the issue
             - Suggested fix if applicable
             - Severity: [critical], [warning], or [suggestion]
 
-            Use `gh` CLI to post inline comments via the GitHub API:
-            - Use `gh api` to create a pull request review with individual comments on specific lines
-            - Each issue = separate review comment at the exact diff position
-            - This allows reviewers to resolve issues individually
-
-            ### What NOT to do
-            - Do NOT put all findings in a single large comment
-            - Do NOT just reference "file.rs:42" — always include a clickable permalink
-            - Do NOT comment on formatting enforced by rustfmt/forge fmt
-            - Do NOT flood with low-signal style comments
+            Do NOT comment on formatting enforced by rustfmt/forge fmt.
+            Do NOT flood with low-signal style comments.
