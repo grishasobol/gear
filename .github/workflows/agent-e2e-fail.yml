@@ -1,0 +1,7 @@
+name: agent-e2e-fail
+on: [push, pull_request]
+jobs:
+  fail:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "intentional failure for watcher e2e" && exit 1
